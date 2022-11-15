@@ -7,7 +7,7 @@ from textual.widgets import Static
 from textual_forms import TextualForm
 
 
-async def query(text: str):
+async def query(text: str) -> str:
     cmd = ['howdoi', text]
     proc = await asyncio.create_subprocess_shell(
         cmd=' '.join(cmd),
@@ -16,8 +16,7 @@ async def query(text: str):
     )
 
     stdout, stderr = await proc.communicate()
-
-    return stdout
+    return stdout.decode("utf-8")
 
 
 class ResultStatic(Static):
@@ -26,7 +25,6 @@ class ResultStatic(Static):
         padding: 1;
     }
     """
-    pass
 
 
 class HowDoIApp(App):
@@ -49,9 +47,10 @@ class HowDoIApp(App):
         result = await query(question)
         self.query_one(ResultStatic).update(
             Syntax(
-                result.decode("utf-8"),
+                result,
                 language,
-                line_numbers=show_line_numbers
+                word_wrap=True,
+                line_numbers=show_line_numbers,
             )
         )
 
