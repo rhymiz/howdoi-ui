@@ -4,7 +4,7 @@ from rich.syntax import Syntax
 from textual.app import App, ComposeResult
 from textual.reactive import reactive
 from textual.widgets import Static
-from textual_forms import TextualForm
+from textual_forms import Form
 
 
 async def query(text: str) -> str:
@@ -19,9 +19,9 @@ async def query(text: str) -> str:
     return stdout.decode("utf-8")
 
 
-class ResultStatic(Static):
+class Results(Static):
     DEFAULT_CSS = """
-    ResultStatic {
+    Results {
         padding: 1;
     }
     """
@@ -29,13 +29,16 @@ class ResultStatic(Static):
 
 class HowDoIApp(App):
     DEFAULT_CSS = """
-    TextualForm {
+    Form {
         height: 25%;
     }
     """
     result = reactive(None)
 
-    async def on_textual_form_submit(self, message: TextualForm.Submit):
+    async def on_form_event(self, message: Form.Event):
+        if message.event != 'search':
+            return
+
         parts = message.data['query'].split('|')
         show_line_numbers = False
         language = "text"
@@ -45,7 +48,7 @@ class HowDoIApp(App):
         else:
             question = parts[0]
         result = await query(question)
-        self.query_one(ResultStatic).update(
+        self.query_one(Results).update(
             Syntax(
                 result,
                 language,
@@ -55,17 +58,27 @@ class HowDoIApp(App):
         )
 
     def compose(self) -> ComposeResult:
-        yield TextualForm(
-            form_data=[{
-                "id": "query",
-                "required": True,
-                "placeholder": "How do I...",
-                "rules": {
-                    "min_length": 3
+        yield Form(
+            fields=[
+                {
+                    "id": "query",
+                    "value": "python|how to use python lru_cache decorator",
+                    "required": True,
+                    "placeholder": "How do I...",
+                    "rules": {
+                        "min_length": 3
+                    }
                 }
-            }]
+            ],
+            buttons=[
+                {
+                    "id": "search",
+                    "label": "Search",
+                    "watch_form_valid": True
+                }
+            ]
         )
-        yield ResultStatic()
+        yield Results()
 
 
 if __name__ == '__main__':
